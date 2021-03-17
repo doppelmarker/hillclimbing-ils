@@ -10,12 +10,21 @@ def evaluateSolution(data, solution):
     return routeLength
 
 
-def perturbation(solution, amount):
-    k = random.randint(2, amount)
-    indexes = np.random.choice(np.arange(amount), k, replace=False)
-    shuffled_indexes = np.random.permutation(indexes)
-    new_solution = solution.copy()
-    new_solution[indexes] = solution[shuffled_indexes]
+def double_bridge_move(solution):
+    # (4-opt) divide the whole permutation into four approx equal parts (a, b, c, d) and reconnect them to find new solution
+    # a = [0...pos1], b = [pos1...pos2], c = [pos2...pos3], d = [pos3..perm.size]
+    # originally: a --> b --> c --> d
+    # after:      a --> d --> c --> b
+    pos1 = 1 + random.randint(0, len(solution) // 4)  # get start and end points of segments
+    pos2 = pos1 + 1 + random.randint(0, len(solution) // 4)
+    pos3 = pos2 + 1 + random.randint(0, len(solution) // 4)
+    p1 = np.concatenate((solution[0:pos1], solution[pos3:]))
+    p2 = np.concatenate((solution[pos2:pos3], solution[pos1:pos2]))
+    return np.concatenate((p1, p2))
+
+
+def perturbation(solution):
+    new_solution = double_bridge_move(solution)
     return new_solution
 
 
@@ -65,7 +74,7 @@ def hillClimbing(data):
             neighbor = getBestNeighbor(solution, data)
         solutions.append(solution)
         routes.append(routeLength)
-        solution = perturbation(solution, len(data))
+        solution = perturbation(solution)
         routeLength = evaluateSolution(data, solution)
         print("---------------------")
     return solutions, routes
